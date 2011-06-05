@@ -65,7 +65,8 @@ module Snap
 
 	  desc "list", "list snapshot"
 	  def list
-      puts VBox::SnapShot.parse_tree( vmname )
+      result = VBox::SnapShot.parse_tree( vmname )
+      puts result ? result : "no snapshot"
 	  end
 
 	  desc "go SNAP_NAME", "go to specified snapshot"
@@ -85,8 +86,8 @@ module Snap
 	  desc "take [desc]", "take snapshot"
 	  def take(desc="")
       VBox::SnapShot.parse_tree( vmname )
-      new_name = VBox::SnapShot.snaps.sort.reverse.first.succ
-      new_name = vmname + "-01" if new_name.empty?
+      last_name = VBox::SnapShot.snaps.sort.reverse.first
+      new_name = last_name.nil? ? vmname + "-01" : last_name.succ
       system "VBoxManage snapshot #{vmname} take #{new_name} --description '#{desc}' --pause"
 	  end
 
