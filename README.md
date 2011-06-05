@@ -2,11 +2,11 @@ What's this?
 ==================================
 vagrant snapshot management plugin
 
-## install
+## Install
 
     gem install vagrant-snap
 
-## following commands are added
+## Following commands are added
 
     Tasks:
       vagrant snap back              # back to current snapshot
@@ -16,10 +16,15 @@ vagrant snapshot management plugin
       vagrant snap list              # list snapshot
       vagrant snap take [desc]       # take snapshot
 
-## limitation
+## Limitation
 
 Currently multi-vm environment is not supported
 
 ## Similar project
 
 [sahara](https://github.com/jedi4ever/sahara)
+
+## Other
+I intentionally avoid naming this plugin as 'vagrant-snapshot', because I believe Vagrant author  
+implement snap shot management feature and want to use 'snapshot' as command name.
+
