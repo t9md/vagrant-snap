@@ -68,7 +68,7 @@ module Snap
       puts VBox::SnapShot.parse_tree( vmname )
 	  end
 
-	  desc "go [SNAPNAME]", "go to specified snapshot"
+	  desc "go SNAP_NAME", "go to specified snapshot"
 	  def go(snapshot_name)
       system "VBoxManage controlvm #{vmname} poweroff"
       system "VBoxManage snapshot  #{vmname} restore #{snapshot_name}"
@@ -90,7 +90,7 @@ module Snap
       system "VBoxManage snapshot #{vmname} take #{new_name} --description '#{desc}' --pause"
 	  end
 
-	  desc "delete", "delete snapshot"
+	  desc "delete SNAP_NAME", "delete snapshot"
 	  def delete(snapshot_name)
       system "VBoxManage snapshot #{vmname} delete #{snapshot_name}"
 	  end
