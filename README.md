@@ -28,3 +28,6 @@ Currently multi-vm environment is not supported
 I intentionally avoided naming this plugin as 'vagrant-snapshot', because I believe Vagrant author  
 implement snap shot management feature and want to use 'snapshot' as command name.
 
+## VM configuration
+In my experience, to avoid `VERR_SSM_LOAD_CONFIG_MISMATCH` error when restoreing snaphot,  
+disable `USB controller` and `absolte pointing device`.
