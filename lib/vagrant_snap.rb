@@ -56,44 +56,75 @@ module Snap
 	  register "snap","Manages a snap"
 
     no_tasks {
-      def vmname
-        @vagrant_env ||= Vagrant::Environment.new
-        @instance_name ||= "#{@vagrant_env.vms[:default].vm.name}"
-        @instance_name
+      def env
+        @_env ||= Vagrant::Environment.new
+      end
+
+      def with_target(target, &blk)
+        target_found = false
+        env.vms.each do |name, vm|
+          vagvmname = vm.name
+          vmname = vm.vm.name
+          if target
+            blk.call(vmname, vagvmname) if target.to_sym == vagvmname
+            target_found = true
+          else
+            blk.call(vmname, vagvmname)
+            target_found = true
+          end
+        end
+        warn "you need to select collect vmname" unless target_found
       end
     }
 
 	  desc "list", "list snapshot"
-	  def list
-      result = VBox::SnapShot.parse_tree( vmname )
-      puts result ? result : "no snapshot"
+	  def list(target=nil)
+      with_target(target) do |vmname, vagvmname|
+        puts "[#{vagvmname}]"
+        result = VBox::SnapShot.parse_tree( vmname )
+        puts result ? result : "no snapshot"
+      end
 	  end
 
 	  desc "go SNAP_NAME", "go to specified snapshot"
-	  def go(snapshot_name)
-      system "VBoxManage controlvm #{vmname} poweroff"
-      system "VBoxManage snapshot  #{vmname} restore #{snapshot_name}"
-      system "VBoxManage startvm   #{vmname} --type headless"
+	  def go(snapshot_name, target=nil)
+      with_target(target) do |vmname, vagvmname|
+        puts "[#{vagvmname}]"
+        system "VBoxManage controlvm #{vmname} poweroff"
+        system "VBoxManage snapshot  #{vmname} restore #{snapshot_name}"
+        system "VBoxManage startvm   #{vmname} --type headless"
+      end
 	  end
 
 	  desc "back", "back to current snapshot"
-	  def back
-      system "VBoxManage controlvm #{vmname} poweroff"
-      system "VBoxManage snapshot  #{vmname} restorecurrent"
-      system "VBoxManage startvm   #{vmname} --type headless"
+	  def back(target=nil)
+      with_target(target) do |vmname, vagvmname|
+        puts "[#{vagvmname}]"
+        system "VBoxManage controlvm #{vmname} poweroff"
+        system "VBoxManage snapshot  #{vmname} restorecurrent"
+        system "VBoxManage startvm   #{vmname} --type headless"
+      end
 	  end
 
-	  desc "take [desc]", "take snapshot"
-	  def take(desc="")
-      VBox::SnapShot.parse_tree( vmname )
-      last_name = VBox::SnapShot.snaps.sort.reverse.first
-      new_name = last_name.nil? ? vmname + "-01" : last_name.succ
-      system "VBoxManage snapshot #{vmname} take #{new_name} --description '#{desc}' --pause"
+	  desc "take [NAME] [-d DESC]", "take snapshot"
+    method_option :desc, :type => :string, :aliases => "-d"
+	  def take(target=nil)
+      with_target(target) do |vmname, vagvmname|
+        puts "[#{vagvmname}]"
+        VBox::SnapShot.parse_tree( vmname )
+        last_name = VBox::SnapShot.snaps.sort.reverse.first
+        new_name = last_name.nil? ? vmname + "-01" : last_name.succ
+        desc = options.desc ? " --description '#{options.desc}'" : ""
+        system "VBoxManage snapshot #{vmname} take #{new_name} #{desc} --pause"
+      end
 	  end
 
 	  desc "delete SNAP_NAME", "delete snapshot"
-	  def delete(snapshot_name)
-      system "VBoxManage snapshot #{vmname} delete #{snapshot_name}"
+	  def delete(snapshot_name, target=nil)
+      with_target(target) do |vmname, vagvmname|
+        puts "[#{vagvmname}]"
+        system "VBoxManage snapshot #{vmname} delete #{snapshot_name}"
+      end
 	  end
 	end
 end
