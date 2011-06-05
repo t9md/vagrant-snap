@@ -25,6 +25,6 @@ Currently multi-vm environment is not supported
 [sahara](https://github.com/jedi4ever/sahara)
 
 ## Other
-I intentionally avoid naming this plugin as 'vagrant-snapshot', because I believe Vagrant author  
+I intentionally avoided naming this plugin as 'vagrant-snapshot', because I believe Vagrant author  
 implement snap shot management feature and want to use 'snapshot' as command name.
 
