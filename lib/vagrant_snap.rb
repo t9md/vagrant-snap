@@ -47,9 +47,8 @@ module Snap
           result << " #{snaps.description}" unless snaps.description.empty?
           result << "\n"
           snaps.children.each_with_index do |e, idx|
-            tmp = guide.chop.chop + "   "
+            tmp = guide.sub("`", " ").chop.chop + "   "
             nextguide = if snaps.children.size == idx + 1
-                          tmp = tmp.sub("`", " ")
                           "`"
                         else
                           "|"
