@@ -17,6 +17,10 @@ can handle multi-vm envirnment.
       vagrant snap list                   # list snapshot
       vagrant snap take [NAME] [-d DESC]  # take snapshot
 
+## Screen capture
+
+![vagrant_snap_list](https://github.com/t9md/vagrant-snap/raw/master/misc/vagrant_snap_list.png)
+
 ## Example
 
 In actual example, current snapshot is highlighted with yellow ANSI color.
