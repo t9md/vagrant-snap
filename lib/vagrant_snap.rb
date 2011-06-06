@@ -113,7 +113,7 @@ module Snap
         puts "[#{vagvmname}]"
         VBox::SnapShot.parse_tree( vmname )
         last_name = VBox::SnapShot.snaps.sort.reverse.first
-        new_name = last_name.nil? ? vmname + "-01" : last_name.succ
+        new_name = last_name.nil? ? vagvmname + "-01" : last_name.succ
         desc = options.desc ? " --description '#{options.desc}'" : ""
         system "VBoxManage snapshot #{vmname} take #{new_name} #{desc} --pause"
       end
