@@ -12,6 +12,7 @@ module Snap
         def parse_tree(vmname)
           vm = VirtualBox::VM.find( vmname )
           @@current = vm.current_snapshot
+          @@indent = ""
           return unless @@current
           _parse(vm.root_snapshot)
         end
@@ -36,16 +37,25 @@ module Snap
           end
         end
 
-        def _parse(snaps, level=0)
+        ## [TODO] darty hack, should be written more simply
+        def _parse(snaps, guide = "")
           @@snaps << snaps.name
-          # time = snaps.time_stamp.strftime  "%m%d-%H:%M"
           time = time_elapse(Time.now - snaps.time_stamp)
-          result = "#{'    ' * level}+-#{snaps.name} [ #{time} ]"
+          snapinfo = "#{snaps.name} [ #{time} ]"
+          snapinfo = snapinfo.yellow  if snaps.uuid == @@current.uuid
+          result = "#{guide} #{snapinfo}"
           result << " #{snaps.description}" unless snaps.description.empty?
-          result = result.yellow  if snaps.uuid == @@current.uuid
           result << "\n"
-          snaps.children.each do |e|
-            result <<  _parse(e, level+1)
+          snaps.children.each_with_index do |e, idx|
+            tmp = guide.chop.chop + "   "
+            nextguide = if snaps.children.size == idx + 1
+                          tmp = tmp.sub("`", " ")
+                          "`"
+                        else
+                          "|"
+                        end
+            tmp << nextguide << "--"
+            result <<  _parse(e, "#{tmp}")
           end
           result
         end

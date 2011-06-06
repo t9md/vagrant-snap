@@ -1,7 +1,7 @@
 LICENSE.txt
 Manifest
 README.md
+Rakefile
 VERSION
 lib/vagrant_init.rb
 lib/vagrant_snap.rb
-Rakefile
