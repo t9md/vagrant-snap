@@ -40,20 +40,17 @@ module Snap
         ## [TODO] darty hack, should be written more simply
         def _parse(snaps, guide = "")
           @@snaps << snaps.name
-          time = time_elapse(Time.now - snaps.time_stamp)
+          time     = time_elapse(Time.now - snaps.time_stamp)
           snapinfo = "#{snaps.name} [ #{time} ]"
           snapinfo = snapinfo.yellow  if snaps.uuid == @@current.uuid
-          result = "#{guide} #{snapinfo}"
-          result << " #{snaps.description}" unless snaps.description.empty?
-          result << "\n"
+          result   = "#{guide} #{snapinfo}"
+          result  << " #{snaps.description}" unless snaps.description.empty?
+          result  << "\n"
+
+          last_child_idx = snaps.children.size - 1
           snaps.children.each_with_index do |e, idx|
-            tmp = guide.sub("`", " ").chop.chop + "   "
-            nextguide = if snaps.children.size == idx + 1
-                          "`"
-                        else
-                          "|"
-                        end
-            tmp << nextguide << "--"
+            tmp = guide.chop.chop.sub("`", " ") + "    "
+            tmp << "#{last_child_idx == idx ? '`' : '|'}" << "--"
             result <<  _parse(e, "#{tmp}")
           end
           result
