@@ -61,7 +61,11 @@ module Snap
         end
 
         def lastname
-          tree.flatten.sort_by(&:time_stamp).last.name
+          if tree
+            tree.flatten.sort_by(&:time_stamp).last.name
+          else
+            nil
+          end
         end
 
         def include?(name)
@@ -114,8 +118,12 @@ module Snap
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
         VBox::SnapShot.parse_tree( vmname )
-        result = VBox::SnapShot.show
-        puts result ? result : "no snapshot"
+        if VBox::SnapShot.tree
+          result = VBox::SnapShot.show
+        else
+          result = "no snapshot"
+        end
+        puts result
       end
 	  end
 
