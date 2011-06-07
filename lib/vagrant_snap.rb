@@ -16,6 +16,7 @@ module Snap
         end
 
         def parse_tree(vmname)
+          init
           vm = VirtualBox::VM.find( vmname )
           @@current = vm.current_snapshot
           return unless @@current
@@ -81,25 +82,6 @@ module Snap
           end
           result
         end
-
-        ## [TODO] darty hack, should be written more simply
-        # def _parse(snapshot, guide = "")
-          # snapnames << snapshot.name
-          # time      = time_elapse(Time.now - snapshot.time_stamp)
-          # snapinfo  = "#{snapshot.name} [ #{time} ]"
-          # snapinfo  = snapinfo.yellow  if snapshot.uuid == @@current.uuid
-          # result    = "#{guide} #{snapinfo}"
-          # result    << " #{snapshot.description}" unless snapshot.description.empty?
-          # result    << "\n"
-
-          # last_child_idx = snapshot.children.size - 1
-          # snapshot.children.each_with_index do |e, idx|
-            # tmp = guide.chop.chop.sub("`", " ") + "    "
-            # tmp << "#{last_child_idx == idx ? '`' : '|'}" << "--"
-            # result <<  _parse(e, "#{tmp}")
-          # end
-          # result
-        # end
       end
     end #}}}
   end
@@ -169,10 +151,23 @@ module Snap
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
         VBox::SnapShot.parse_tree( vmname )
-        new_name = options.name if options.name
+        if options.name
+          if VBox::SnapShot.include? options.name
+            warn "#{options.name} is already exist".red
+            next
+          else
+            new_name = options.name
+          end
+        end
         unless new_name
           lastname = VBox::SnapShot.lastname
-          new_name = lastname.nil? ? "001" : lastname.succ
+          new_name = if lastname.nil?
+                       "001"
+                     else
+                       n = lastname.succ
+                       n = n.succ while VBox::SnapShot.include? n
+                       n
+                     end
         end
         desc = options.desc ? " --description '#{options.desc}'" : ""
         system "VBoxManage snapshot #{vmname} take #{new_name} #{desc} --pause"
