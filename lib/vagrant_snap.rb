@@ -4,15 +4,22 @@ module Snap
   module VBox
     class SnapShot #{{{
       class << self
-        def snapnames()
-          @@snapnames ||= []
+        def tree
+          @@tree
+        end
+        
+        Snap = Struct.new(:name, :time_stamp, :description, :uuid, :current)
+        
+        def init
+          @@current = nil
+          @@tree = nil
         end
 
         def parse_tree(vmname)
           vm = VirtualBox::VM.find( vmname )
           @@current = vm.current_snapshot
           return unless @@current
-          _parse(vm.root_snapshot)
+          @@tree = _parse(vm.root_snapshot)
         end
 
         # [TODO] need refactoring
@@ -35,24 +42,64 @@ module Snap
           end
         end
 
-        ## [TODO] darty hack, should be written more simply
-        def _parse(snapshot, guide = "")
-          snapnames << snapshot.name
-          time      = time_elapse(Time.now - snapshot.time_stamp)
-          snapinfo  = "#{snapshot.name} [ #{time} ]"
-          snapinfo  = snapinfo.yellow  if snapshot.uuid == @@current.uuid
-          result    = "#{guide} #{snapinfo}"
-          result    << " #{snapshot.description}" unless snapshot.description.empty?
-          result    << "\n"
+        def _parse(s)
+          tree = [ Snap.new(s.name , s.time_stamp, s.description, s.uuid, s.uuid == @@current.uuid) ]
+          s.children.each do |c|
+            tree.concat [_parse(c)]
+          end
+          tree
+        end
 
-          last_child_idx = snapshot.children.size - 1
-          snapshot.children.each_with_index do |e, idx|
-            tmp = guide.chop.chop.sub("`", " ") + "    "
-            tmp << "#{last_child_idx == idx ? '`' : '|'}" << "--"
-            result <<  _parse(e, "#{tmp}")
+        def format(guide, s)
+          time     = time_elapse(Time.now - s.time_stamp)
+          snapinfo = "#{s.name} [ #{time} ]"
+          snapinfo  = snapinfo.yellow  if s.current
+          result   = "#{guide} #{snapinfo}"
+          result  << " #{s.description}" unless s.description.empty?
+          result  << "\n"
+        end
+
+        def lastname
+          tree.flatten.sort_by(&:time_stamp).last.name
+        end
+
+        def include?(name)
+          tree.flatten.map(&:name).include? name
+        end
+
+        def show(t=tree, guide="")
+          result = ""
+          t.each_with_index do |v, idx|
+            case v
+            when Array
+              tmp = guide.dup.chop.chop.sub("`", " ") << "    "
+              tmp << "#{t.size == idx + 1 ? '`' : '|'}" << "--"
+              result << show(v, tmp)
+            else
+              result << format(guide, v)
+            end
           end
           result
         end
+
+        ## [TODO] darty hack, should be written more simply
+        # def _parse(snapshot, guide = "")
+          # snapnames << snapshot.name
+          # time      = time_elapse(Time.now - snapshot.time_stamp)
+          # snapinfo  = "#{snapshot.name} [ #{time} ]"
+          # snapinfo  = snapinfo.yellow  if snapshot.uuid == @@current.uuid
+          # result    = "#{guide} #{snapinfo}"
+          # result    << " #{snapshot.description}" unless snapshot.description.empty?
+          # result    << "\n"
+
+          # last_child_idx = snapshot.children.size - 1
+          # snapshot.children.each_with_index do |e, idx|
+            # tmp = guide.chop.chop.sub("`", " ") + "    "
+            # tmp << "#{last_child_idx == idx ? '`' : '|'}" << "--"
+            # result <<  _parse(e, "#{tmp}")
+          # end
+          # result
+        # end
       end
     end #}}}
   end
@@ -84,7 +131,8 @@ module Snap
 	  def list(target=nil)
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
-        result = VBox::SnapShot.parse_tree( vmname )
+        VBox::SnapShot.parse_tree( vmname )
+        result = VBox::SnapShot.show
         puts result ? result : "no snapshot"
       end
 	  end
@@ -93,9 +141,14 @@ module Snap
 	  def go(snapshot_name, target=nil)
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
-        system "VBoxManage controlvm #{vmname} poweroff"
-        system "VBoxManage snapshot  #{vmname} restore #{snapshot_name}"
-        system "VBoxManage startvm   #{vmname} --type headless"
+        VBox::SnapShot.parse_tree( vmname )
+        if VBox::SnapShot.include?( snapshot_name )
+          system "VBoxManage controlvm #{vmname} poweroff"
+          system "VBoxManage snapshot  #{vmname} restore #{snapshot_name}"
+          system "VBoxManage startvm   #{vmname} --type headless"
+        else
+          warn "#{snapshot_name} is not exist".red
+        end
       end
 	  end
 
@@ -118,8 +171,8 @@ module Snap
         VBox::SnapShot.parse_tree( vmname )
         new_name = options.name if options.name
         unless new_name
-          last_name = VBox::SnapShot.snapnames.sort.reverse.first
-          new_name = last_name.nil? ? "001" : last_name.succ
+          lastname = VBox::SnapShot.lastname
+          new_name = lastname.nil? ? "001" : lastname.succ
         end
         desc = options.desc ? " --description '#{options.desc}'" : ""
         system "VBoxManage snapshot #{vmname} take #{new_name} #{desc} --pause"
@@ -130,7 +183,12 @@ module Snap
 	  def delete(snapshot_name, target=nil)
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
-        system "VBoxManage snapshot #{vmname} delete #{snapshot_name}"
+        VBox::SnapShot.parse_tree( vmname )
+        if VBox::SnapShot.include?( snapshot_name )
+          system "VBoxManage snapshot #{vmname} delete #{snapshot_name}"
+        else
+          warn "#{snapshot_name} is not exist".red
+        end
       end
 	  end
 	end
