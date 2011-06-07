@@ -3,16 +3,14 @@ require "colored"
 module Snap
   module VBox
     class SnapShot #{{{
-      @@snaps = []
       class << self
-        def is_endnode?() @@current.uuid == @@snaps.last.uuid end
-
-        def snaps() @@snaps end 
+        def snapnames()
+          @@snapnames ||= []
+        end
 
         def parse_tree(vmname)
           vm = VirtualBox::VM.find( vmname )
           @@current = vm.current_snapshot
-          @@indent = ""
           return unless @@current
           _parse(vm.root_snapshot)
         end
@@ -38,17 +36,17 @@ module Snap
         end
 
         ## [TODO] darty hack, should be written more simply
-        def _parse(snaps, guide = "")
-          @@snaps << snaps.name
-          time     = time_elapse(Time.now - snaps.time_stamp)
-          snapinfo = "#{snaps.name} [ #{time} ]"
-          snapinfo = snapinfo.yellow  if snaps.uuid == @@current.uuid
-          result   = "#{guide} #{snapinfo}"
-          result  << " #{snaps.description}" unless snaps.description.empty?
-          result  << "\n"
+        def _parse(snapshot, guide = "")
+          snapnames << snapshot.name
+          time      = time_elapse(Time.now - snapshot.time_stamp)
+          snapinfo  = "#{snapshot.name} [ #{time} ]"
+          snapinfo  = snapinfo.yellow  if snapshot.uuid == @@current.uuid
+          result    = "#{guide} #{snapinfo}"
+          result    << " #{snapshot.description}" unless snapshot.description.empty?
+          result    << "\n"
 
-          last_child_idx = snaps.children.size - 1
-          snaps.children.each_with_index do |e, idx|
+          last_child_idx = snapshot.children.size - 1
+          snapshot.children.each_with_index do |e, idx|
             tmp = guide.chop.chop.sub("`", " ") + "    "
             tmp << "#{last_child_idx == idx ? '`' : '|'}" << "--"
             result <<  _parse(e, "#{tmp}")
@@ -58,6 +56,7 @@ module Snap
       end
     end #}}}
   end
+
 	class Command < Vagrant::Command::GroupBase
 	  register "snap","Manages a snap"
 
@@ -70,16 +69,14 @@ module Snap
         target_found = false
         env.vms.each do |name, vm|
           vagvmname = vm.name
-          vmname = vm.vm.name
-          if target
-            blk.call(vmname, vagvmname) if target.to_sym == vagvmname
-            target_found = true
-          else
+          vmname    = vm.vm.name
+
+          if target.nil? or target.to_sym == vagvmname
             blk.call(vmname, vagvmname)
             target_found = true
           end
         end
-        warn "you need to select collect vmname" unless target_found
+        warn "A VM by the name of `#{target}' was not found".red unless target_found
       end
     }
 
@@ -118,10 +115,12 @@ module Snap
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
         VBox::SnapShot.parse_tree( vmname )
-        last_name = VBox::SnapShot.snaps.sort.reverse.first
+        last_name = VBox::SnapShot.snapnames.sort.reverse.first
         new_name = last_name.nil? ? "#{vagvmname}-01" : last_name.succ
         desc = options.desc ? " --description '#{options.desc}'" : ""
-        system "VBoxManage snapshot #{vmname} take #{new_name} #{desc} --pause"
+
+        p new_name
+        # system "VBoxManage snapshot #{vmname} take #{new_name} #{desc} --pause"
       end
 	  end
 
