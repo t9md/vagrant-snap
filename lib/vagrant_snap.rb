@@ -109,18 +109,20 @@ module Snap
       end
 	  end
 
-	  desc "take [NAME] [-d DESC]", "take snapshot"
+	  desc "take [TARGET] [-n SNAP_NAME] [-d DESC]", "take snapshot"
     method_option :desc, :type => :string, :aliases => "-d"
+    method_option :name, :type => :string, :aliases => "-n"
 	  def take(target=nil)
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
         VBox::SnapShot.parse_tree( vmname )
-        last_name = VBox::SnapShot.snapnames.sort.reverse.first
-        new_name = last_name.nil? ? "#{vagvmname}-01" : last_name.succ
+        new_name = options.name if options.name
+        unless new_name
+          last_name = VBox::SnapShot.snapnames.sort.reverse.first
+          new_name = last_name.nil? ? "001" : last_name.succ
+        end
         desc = options.desc ? " --description '#{options.desc}'" : ""
-
-        p new_name
-        # system "VBoxManage snapshot #{vmname} take #{new_name} #{desc} --pause"
+        system "VBoxManage snapshot #{vmname} take #{new_name} #{desc} --pause"
       end
 	  end
 
