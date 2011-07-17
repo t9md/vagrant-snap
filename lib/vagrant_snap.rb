@@ -7,9 +7,9 @@ module Snap
         def tree
           @@tree
         end
-        
+
         Snap = Struct.new(:name, :time_stamp, :description, :uuid, :current)
-        
+
         def init
           @@current = nil
           @@tree = nil
@@ -69,6 +69,7 @@ module Snap
         end
 
         def include?(name)
+          return false unless tree
           tree.flatten.map(&:name).include? name
         end
 
@@ -90,8 +91,8 @@ module Snap
     end #}}}
   end
 
-	class Command < Vagrant::Command::GroupBase
-	  register "snap","Manages a snap"
+  class Command < Vagrant::Command::GroupBase
+    register "snap","Manages a snap"
 
     no_tasks {
       def env
@@ -113,8 +114,8 @@ module Snap
       end
     }
 
-	  desc "list", "list snapshot"
-	  def list(target=nil)
+    desc "list", "list snapshot"
+    def list(target=nil)
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
         VBox::SnapShot.parse_tree( vmname )
@@ -125,10 +126,10 @@ module Snap
         end
         puts result
       end
-	  end
+    end
 
-	  desc "go SNAP_NAME", "go to specified snapshot"
-	  def go(snapshot_name, target=nil)
+    desc "go SNAP_NAME", "go to specified snapshot"
+    def go(snapshot_name, target=nil)
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
         VBox::SnapShot.parse_tree( vmname )
@@ -140,22 +141,22 @@ module Snap
           warn "#{snapshot_name} is not exist".red
         end
       end
-	  end
+    end
 
-	  desc "back", "back to current snapshot"
-	  def back(target=nil)
+    desc "back", "back to current snapshot"
+    def back(target=nil)
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
         system "VBoxManage controlvm #{vmname} poweroff"
         system "VBoxManage snapshot  #{vmname} restorecurrent"
         system "VBoxManage startvm   #{vmname} --type headless"
       end
-	  end
+    end
 
-	  desc "take [TARGET] [-n SNAP_NAME] [-d DESC]", "take snapshot"
+    desc "take [TARGET] [-n SNAP_NAME] [-d DESC]", "take snapshot"
     method_option :desc, :type => :string, :aliases => "-d"
     method_option :name, :type => :string, :aliases => "-n"
-	  def take(target=nil)
+    def take(target=nil)
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
         VBox::SnapShot.parse_tree( vmname )
@@ -178,12 +179,12 @@ module Snap
                      end
         end
         desc = options.desc ? " --description '#{options.desc}'" : ""
-        system "VBoxManage snapshot #{vmname} take #{new_name} #{desc} --pause"
+        system "VBoxManage snapshot '#{vmname}' take '#{new_name}' #{desc} --pause"
       end
-	  end
+    end
 
-	  desc "delete SNAP_NAME", "delete snapshot"
-	  def delete(snapshot_name, target=nil)
+    desc "delete SNAP_NAME", "delete snapshot"
+    def delete(snapshot_name, target=nil)
       with_target(target) do |vmname, vagvmname|
         puts "[#{vagvmname}]"
         VBox::SnapShot.parse_tree( vmname )
@@ -193,6 +194,6 @@ module Snap
           warn "#{snapshot_name} is not exist".red
         end
       end
-	  end
-	end
+    end
+  end
 end
