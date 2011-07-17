@@ -69,6 +69,7 @@ module Snap
         end
 
         def include?(name)
+          return false unless tree
           tree.flatten.map(&:name).include? name
         end
 
