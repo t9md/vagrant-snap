@@ -179,7 +179,7 @@ module Snap
                      end
         end
         desc = options.desc ? " --description '#{options.desc}'" : ""
-        system "VBoxManage snapshot #{vmname} take #{new_name} #{desc} --pause"
+        system "VBoxManage snapshot '#{vmname}' take '#{new_name}' #{desc} --pause"
       end
 	  end
 
