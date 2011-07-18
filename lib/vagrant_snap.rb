@@ -102,6 +102,7 @@ module Snap
       def with_target(target, &blk)
         target_found = false
         env.vms.each do |name, vm|
+          next if vm.vm.nil?    # not yet created
           vagvmname = vm.name
           vmname    = vm.vm.name
 
