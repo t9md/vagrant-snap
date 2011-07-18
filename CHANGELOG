@@ -1,3 +1,6 @@
+* 0.08
+2011-07-18
+   * No change but only increment version number for mistake in release.
 * 0.07
 2011-07-18
    * snapshot name is now start from 0 instead of 001 for less key stroke.

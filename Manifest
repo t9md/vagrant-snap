@@ -3,5 +3,6 @@ Manifest
 README.md
 Rakefile
 VERSION
+CHANGELOG
 lib/vagrant_init.rb
 lib/vagrant_snap.rb
