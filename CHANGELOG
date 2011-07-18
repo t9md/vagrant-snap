@@ -1,3 +1,6 @@
+* 0.09
+2011-07-19
+   * don't die on VM defined in env but not yet created, thanks to Ches Martin
 * 0.08
 2011-07-18
    * No change but only increment version number for mistake in release.
