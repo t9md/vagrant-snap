@@ -171,7 +171,7 @@ module Snap
         unless new_name
           lastname = VBox::SnapShot.lastname
           new_name = if lastname.nil?
-                       "001"
+                       "0"
                      else
                        n = lastname.succ
                        n = n.succ while VBox::SnapShot.include? n

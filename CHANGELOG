@@ -1,0 +1,6 @@
+* 0.07
+2011-07-18
+   * snapshot name is now start from 0 instead of 001 for less key stroke.
+2011-07-18 Fix following bug, thanks to Ches Martin
+   * Trying to create a snap with a name given when no previous snapshots exist failed.
+   * Spaces in the name of a VM or in a snapshot name passed as -n 'initial build' caused failures.
