@@ -1,7 +1,7 @@
 What's this?
 ==================================
 vagrant snapshot management plugin
-can handle multi-vm envirnment.
+can handle multi-vm environment.
 
 ## Install
 
