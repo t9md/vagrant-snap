@@ -91,110 +91,72 @@ module Snap
     end #}}}
   end
 
-  class Command < Vagrant::Command::GroupBase
-    register "snap","Manages a snap"
+  class Snap < Vagrant::Command::Base
+    # def initialize(argv, env)
+      # super
+      # @main_args, @sub_command, @sub_args = split_main_and_subcommand(argv)
+    # end
+    def execute
+      # p @argv
+      @main_args, @sub_command, @sub_args = split_main_and_subcommand(@argv)
+      p [@main_args, @sub_command, @sub_args]
 
-    no_tasks {
-      def env
-        @_env ||= Vagrant::Environment.new
+      sub_list = %w(list go back take delete test)
+      if sub_list.include? @sub_command 
+        send(@sub_command)
       end
 
-      def with_target(target, &blk)
-        target_found = false
-        env.vms.each do |name, vm|
-          next if vm.vm.nil?    # not yet created
-          vagvmname = vm.name
-          vmname    = vm.vm.name
+      # when /list/ then list
+      # when /list/
+        # list
+      # puts "HELLO!"
+    end
 
-          if target.nil? or target.to_sym == vagvmname
-            blk.call(vmname, vagvmname)
-            target_found = true
-          end
-        end
-        warn "A VM by the name of `#{target}' was not found".red unless target_found
-      end
-    }
-
-    desc "list", "list snapshot"
+    private
     def list(target=nil)
-      with_target(target) do |vmname, vagvmname|
-        puts "[#{vagvmname}]"
-        VBox::SnapShot.parse_tree( vmname )
-        if VBox::SnapShot.tree
-          result = VBox::SnapShot.show
-        else
-          result = "no snapshot"
+      # next if vm.vm.nil?    # not yet created
+      with_target_vms(target) do |vm|
+        puts "[#{vm.name}]"
+
+        unless vm.created?
+          @logger.info("not created yet: #{vm.name}")
+          next
         end
-        puts result
+
+        p vm.class
+        # VBox::SnapShot.parse_tree( vm.vm.name )
+        # if VBox::SnapShot.tree
+          # result = VBox::SnapShot.show
+        # else
+          # result = "no snapshot"
+        # end
+        # puts result
+      end
+      # puts "list: list snapshot"
+    end
+    def test(target=nil)
+      @env.vms.each do |name, vm|
+        p vm.vm
+        p name
       end
     end
 
-    desc "go SNAP_NAME", "go to specified snapshot"
-    def go(snapshot_name, target=nil)
-      with_target(target) do |vmname, vagvmname|
-        puts "[#{vagvmname}]"
-        VBox::SnapShot.parse_tree( vmname )
-        if VBox::SnapShot.include?( snapshot_name )
-          system "VBoxManage controlvm #{vmname} poweroff"
-          system "VBoxManage snapshot  #{vmname} restore #{snapshot_name}"
-          system "VBoxManage startvm   #{vmname} --type headless"
-        else
-          warn "#{snapshot_name} is not exist".red
-        end
-      end
+    def go
+      puts "go SNAP_NAME: go to specified snapshot"
     end
 
-    desc "back", "back to current snapshot"
-    def back(target=nil)
-      with_target(target) do |vmname, vagvmname|
-        puts "[#{vagvmname}]"
-        system "VBoxManage controlvm #{vmname} poweroff"
-        system "VBoxManage snapshot  #{vmname} restorecurrent"
-        system "VBoxManage startvm   #{vmname} --type headless"
-      end
+    def back
+      puts "back: back to current snapshot"
     end
 
-    desc "take [TARGET] [-n SNAP_NAME] [-d DESC]", "take snapshot"
-    method_option :desc, :type => :string, :aliases => "-d"
-    method_option :name, :type => :string, :aliases => "-n"
-    def take(target=nil)
-      with_target(target) do |vmname, vagvmname|
-        puts "[#{vagvmname}]"
-        VBox::SnapShot.parse_tree( vmname )
-        if options.name
-          if VBox::SnapShot.include? options.name
-            warn "#{options.name} is already exist".red
-            next
-          else
-            new_name = options.name
-          end
-        end
-        unless new_name
-          lastname = VBox::SnapShot.lastname
-          new_name = if lastname.nil?
-                       "0"
-                     else
-                       n = lastname.succ
-                       n = n.succ while VBox::SnapShot.include? n
-                       n
-                     end
-        end
-        desc = options.desc ? " --description '#{options.desc}'" : ""
-        system "VBoxManage snapshot '#{vmname}' take '#{new_name}' #{desc} --pause"
-      end
+    def take
+      puts "take [TARGET] [-n SNAP_NAME] [-d DESC]: take snapshot"
     end
 
-    desc "delete SNAP_NAME", "delete snapshot"
-    def delete(snapshot_name, target=nil)
-      with_target(target) do |vmname, vagvmname|
-        puts "[#{vagvmname}]"
-        VBox::SnapShot.parse_tree( vmname )
-        if VBox::SnapShot.include?( snapshot_name )
-          system "VBoxManage snapshot #{vmname} delete #{snapshot_name}"
-        else
-          warn "#{snapshot_name} is not exist".red
-        end
-      end
+    def delete
+      puts "delete SNAP_NAME: delete snapshot"
     end
+
   end
 end
+Vagrant.commands.register(:snap) { ::Snap::Snap }
