@@ -1,3 +1,7 @@
+* 0.10
+2012-01-26
+   * rewite to support vagrant 0.9(it no longer use Thor).
+   * dirty hack but work..
 * 0.09
 2011-07-19
    * don't die on VM defined in env but not yet created, thanks to Ches Martin
