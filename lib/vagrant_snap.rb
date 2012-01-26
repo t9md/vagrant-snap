@@ -1,4 +1,6 @@
+require "virtualbox"
 require "colored"
+require "pp"
 
 module Snap
   module VBox
@@ -17,7 +19,7 @@ module Snap
 
         def parse_tree(vmname)
           init
-          vm = VirtualBox::VM.find( vmname )
+          vm = ::VirtualBox::VM.find( vmname )
           @@current = vm.current_snapshot
           return unless @@current
           @@tree = _parse(vm.root_snapshot)
@@ -68,6 +70,16 @@ module Snap
           end
         end
 
+        def next_available_snapname
+          if lastname.nil?
+            "0"
+          else
+            n = lastname.succ
+            n = n.succ while VBox::SnapShot.include? n
+            n
+          end
+        end
+
         def include?(name)
           return false unless tree
           tree.flatten.map(&:name).include? name
@@ -92,71 +104,145 @@ module Snap
   end
 
   class Snap < Vagrant::Command::Base
-    # def initialize(argv, env)
-      # super
-      # @main_args, @sub_command, @sub_args = split_main_and_subcommand(argv)
-    # end
-    def execute
-      # p @argv
+    def execute# {{{
       @main_args, @sub_command, @sub_args = split_main_and_subcommand(@argv)
-      p [@main_args, @sub_command, @sub_args]
-
-      sub_list = %w(list go back take delete test)
-      if sub_list.include? @sub_command 
+      # p [@main_args, @sub_command, @sub_args]
+      # sub_list = %w(list go back take delete test)
+      sub_list = %w(list go back take delete)
+      if sub_list.include? @sub_command
         send(@sub_command)
+      else
+        ui.warn "unkown command '#{@sub_command}'"
       end
-
-      # when /list/ then list
-      # when /list/
-        # list
-      # puts "HELLO!"
-    end
+    end# }}}
 
     private
-    def list(target=nil)
-      # next if vm.vm.nil?    # not yet created
-      with_target_vms(target) do |vm|
-        puts "[#{vm.name}]"
+    # def env
+    # @_env ||= Vagrant::Environment.new
+    # end
 
+    def ui# {{{
+      @ui ||= ::Vagrant::UI::Colored.new("vagrant")
+    end# }}}
+    def safe_with_target_vms(target, &blk)# {{{
+      with_target_vms(target) do |vm|
         unless vm.created?
           @logger.info("not created yet: #{vm.name}")
           next
         end
-
-        p vm.class
-        # VBox::SnapShot.parse_tree( vm.vm.name )
-        # if VBox::SnapShot.tree
-          # result = VBox::SnapShot.show
-        # else
-          # result = "no snapshot"
-        # end
-        # puts result
+        puts "[#{vm.name}]"
+        blk.call(vm)
       end
-      # puts "list: list snapshot"
-    end
-    def test(target=nil)
-      @env.vms.each do |name, vm|
-        p vm.vm
-        p name
+    end# }}}
+    def target_vmname# {{{
+      target = @sub_args.empty? ? nil : @sub_args.last.to_s
+    end# }}}
+    def exe(cmd)# {{{
+      puts "# exe: #{cmd}" if @exe_verbose
+      system cmd
+    end# }}}
+
+    def list# {{{
+      options = {}
+      opts = OptionParser.new { |opts| opts.banner = "vagrant snap list" }
+      parse_options(opts)
+      safe_with_target_vms(target_vmname) do |vm|
+        VBox::SnapShot.parse_tree( vm.uuid )
+        puts VBox::SnapShot.tree ? VBox::SnapShot.show : "no snapshot"
       end
-    end
+    end# }}}
+    def go # {{{
+      options = {}
+      opts = OptionParser.new do |opts|
+        opts.banner = "Usage: vagrant snapt go <snapshot> [boxname]"
+      end
+      parse_options(opts)
 
-    def go
-      puts "go SNAP_NAME: go to specified snapshot"
-    end
+      snapshot, target = *@sub_args
+      unless snapshot
+        puts opts.help
+        return
+      end
+      safe_with_target_vms(target) do |vm|
+        VBox::SnapShot.parse_tree( vm.uuid )
+        if VBox::SnapShot.include?( snapshot )
+          exe "VBoxManage controlvm '#{vm.uuid}' poweroff"
+          exe "VBoxManage snapshot  '#{vm.uuid}' restore '#{snapshot}'"
+          exe "VBoxManage startvm   '#{vm.uuid}' --type headless"
+        else
+          ui.warn "'#{snapshot}' is not exist"
+        end
+      end
+    end# }}}
+    def back# {{{
+      options = {}
+      opts = OptionParser.new do |opts|
+        opts.banner = "vagrant snap back"
+      end
+      parse_options(opts)
 
-    def back
-      puts "back: back to current snapshot"
-    end
+      safe_with_target_vms(target_vmname) do |vm|
+        exe "VBoxManage controlvm '#{vm.uuid}' poweroff"
+        exe "VBoxManage snapshot  '#{vm.uuid}' restorecurrent"
+        exe "VBoxManage startvm   '#{vm.uuid}' --type headless"
+      end
+    end# }}}
+    def take# {{{
+      options = {}
+      opts = OptionParser.new do |opts|
+        opts.banner = "Usage: vagrant snap take [TARGET] [-n SNAP_NAME] [-d DESC]"
+        opts.on("-n", "--name STR", "Name of snapshot"       ){ |v| options[:name] = v }
+        opts.on("-d", "--desc STR", "Description of snapshot"){ |v| options[:desc] = v }
+      end
 
-    def take
-      puts "take [TARGET] [-n SNAP_NAME] [-d DESC]: take snapshot"
-    end
+      begin
+        argv =  parse_options(opts)
+      rescue OptionParser::MissingArgument
+        raise ::Vagrant::Errors::CLIInvalidOptions, :help => opts.help.chomp
+      end
+      return if !argv
+      @main_args, @sub_command, @sub_args = split_main_and_subcommand(argv)
+      # p @sub_args
+      # return
+      # snapshot, target = *@sub_args
+      safe_with_target_vms(target_vmname) do |vm|
+        VBox::SnapShot.parse_tree( vm.uuid )
+        if options[:name] and VBox::SnapShot.include? options[:name]
+          ui.warn "'#{options[:name]}' is already exist"
+          next
+        end
+        snapshot = options[:name] ? options[:name] : VBox::SnapShot.next_available_snapname
+        cmd = "VBoxManage snapshot '#{vm.uuid}' take '#{snapshot}' --pause"
+        if options[:desc]
+          cmd << " --description '#{options[:desc]}'"
+        end
+        exe cmd
+      end
+    end# }}}
 
-    def delete
-      puts "delete SNAP_NAME: delete snapshot"
-    end
-
+    def delete# {{{
+      options = {}
+      opts = OptionParser.new do |opts|
+        opts.banner = "vagrant snapt delete <snapshot> [boxname]"
+      end
+      argv = parse_options(opts)
+      return !argv
+      @main_args, @sub_command, @sub_args = split_main_and_subcommand(argv)
+      snapshot, target = *@sub_args
+      unless snapshot
+        puts opts.help
+        return
+      end
+      snapshot, target = *@sub_args
+      safe_with_target_vms(target) do |vm|
+        VBox::SnapShot.parse_tree( vm.uuid )
+        if VBox::SnapShot.include?( snapshot )
+          exe "VBoxManage snapshot '#{vm.uuid}' delete '#{snapshot}'"
+        else
+          ui.warn "'#{snapshot}' is not exist"
+        end
+      end
+    end# }}}
   end
 end
 Vagrant.commands.register(:snap) { ::Snap::Snap }
