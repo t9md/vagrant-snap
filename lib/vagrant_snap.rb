@@ -104,15 +104,35 @@ module Snap
   end
 
   class Snap < Vagrant::Command::Base
+    def help
+      puts <<-EOS
+Usage: vagrant snap <subcommand> [options...]
+
+ subcommands are..
+    vagrant snap list
+    vagrant snap back
+    vagrant snap go <snapshot> [boxname]
+    vagrant snap take [TARGET] [-n SNAP_NAME] [-d DESC]"
+    vagrant snap delete <snapshot> [boxname]"
+    
+      EOS
+    end
     def execute# {{{
       @main_args, @sub_command, @sub_args = split_main_and_subcommand(@argv)
       # p [@main_args, @sub_command, @sub_args]
+
       # sub_list = %w(list go back take delete test)
       sub_list = %w(list go back take delete)
+      unless @sub_command
+        help
+        exit
+      end
       if sub_list.include? @sub_command
         send(@sub_command)
       else
         ui.warn "unkown command '#{@sub_command}'"
+        help
+        exit
       end
     end# }}}
 
@@ -143,9 +163,10 @@ module Snap
     end# }}}
 
     def list# {{{
-      options = {}
-      opts = OptionParser.new { |opts| opts.banner = "vagrant snap list" }
-      parse_options(opts)
+      # options = {}
+      # opts = OptionParser.new { |opts| opts.banner = "vagrant snap list" }
+      # argv = parse_options(opts)
+      # # p argv
       safe_with_target_vms(target_vmname) do |vm|
         VBox::SnapShot.parse_tree( vm.uuid )
         puts VBox::SnapShot.tree ? VBox::SnapShot.show : "no snapshot"
@@ -156,8 +177,6 @@ module Snap
       opts = OptionParser.new do |opts|
         opts.banner = "Usage: vagrant snapt go <snapshot> [boxname]"
       end
-      parse_options(opts)
-
       snapshot, target = *@sub_args
       unless snapshot
         puts opts.help
@@ -175,12 +194,6 @@ module Snap
       end
     end# }}}
     def back# {{{
-      options = {}
-      opts = OptionParser.new do |opts|
-        opts.banner = "vagrant snap back"
-      end
-      parse_options(opts)
-
       safe_with_target_vms(target_vmname) do |vm|
         exe "VBoxManage controlvm '#{vm.uuid}' poweroff"
         exe "VBoxManage snapshot  '#{vm.uuid}' restorecurrent"
@@ -223,11 +236,8 @@ module Snap
     def delete# {{{
       options = {}
       opts = OptionParser.new do |opts|
-        opts.banner = "vagrant snapt delete <snapshot> [boxname]"
+        opts.banner = "vagrant snap delete <snapshot> [boxname]"
       end
-      argv = parse_options(opts)
-      return !argv
-      @main_args, @sub_command, @sub_args = split_main_and_subcommand(argv)
       snapshot, target = *@sub_args
       unless snapshot
         puts opts.help
