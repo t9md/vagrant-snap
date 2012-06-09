@@ -160,6 +160,7 @@ Usage: vagrant snap <subcommand> [options...]
     def exe(cmd)# {{{
       puts "# exe: #{cmd}" if @exe_verbose
       system cmd
+	  sleep(1)
     end# }}}
 
     def list# {{{
