@@ -160,7 +160,9 @@ Usage: vagrant snap <subcommand> [options...]
     def exe(cmd)# {{{
       puts "# exe: #{cmd}" if @exe_verbose
       system cmd
-	  sleep(1)
+	  if RUBY_PLATFORM =~ /mswin|mingw|windows/
+		sleep(1)
+	  end
     end# }}}
 
     def list# {{{
