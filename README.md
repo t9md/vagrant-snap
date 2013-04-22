@@ -65,8 +65,10 @@ In actual example, current snapshot is highlighted with yellow ANSI color.
     t510 dev/vagtest02% 
 
 
-## Similar project
-[sahara](https://github.com/jedi4ever/sahara)
+## Similar projects
+* [sahara](https://github.com/jedi4ever/sahara)
+* [vagrant-vbox-snapshot](https://github.com/dergachev/vagrant-vbox-snapshot) (compatible with Vagrant 1.1+)
+* https://gist.github.com/tombh/5142237 (compatible with Vagrant 1.0.4 - 1.0.7)
 
 ## Other
 I intentionally avoided naming this plugin as 'vagrant-snapshot', because I believe Vagrant author  
