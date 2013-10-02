@@ -1,3 +1,12 @@
+[NOTE] This did not work for Vagrant v1.0 above.
+==================================
+Since I haven't used Vagrant in my daily work and I didn't have free time, I haven't managed this plugin over 2 years.  
+So don't use this plugin for Vagrant v1.0.  
+Sorry.  
+  
+P.S.  
+Recently I came back to OSS world as my own hobby, I might update this plugin if time available.  
+
 What's this?
 ==================================
 vagrant snapshot management plugin
