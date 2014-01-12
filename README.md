@@ -1,4 +1,4 @@
-[NOTE] This did not work for Vagrant v1.0 above.
+[NOTE] Not work for Vagrant v1.0 above.
 ==================================
 Since I haven't used Vagrant in my daily work and I didn't have free time, I haven't managed this plugin over 2 years.  
 So don't use this plugin for Vagrant v1.0.  Sorry.  You can use [sahara](https://github.com/jedi4ever/sahara) instead for similar functionality.
