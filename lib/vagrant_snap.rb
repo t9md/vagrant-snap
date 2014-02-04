@@ -160,6 +160,9 @@ Usage: vagrant snap <subcommand> [options...]
     def exe(cmd)# {{{
       puts "# exe: #{cmd}" if @exe_verbose
       system cmd
+	  if RUBY_PLATFORM =~ /mswin|mingw|windows/
+		sleep(1)
+	  end
     end# }}}
 
     def list# {{{
@@ -185,9 +188,9 @@ Usage: vagrant snap <subcommand> [options...]
       safe_with_target_vms(target) do |vm|
         VBox::SnapShot.parse_tree( vm.uuid )
         if VBox::SnapShot.include?( snapshot )
-          exe "VBoxManage controlvm '#{vm.uuid}' poweroff"
-          exe "VBoxManage snapshot  '#{vm.uuid}' restore '#{snapshot}'"
-          exe "VBoxManage startvm   '#{vm.uuid}' --type headless"
+          exe "VBoxManage controlvm \"#{vm.uuid}\" poweroff"
+          exe "VBoxManage snapshot  \"#{vm.uuid}\" restore \"#{snapshot}\""
+          exe "VBoxManage startvm   \"#{vm.uuid}\" --type headless"
         else
           ui.warn "'#{snapshot}' is not exist"
         end
@@ -195,9 +198,9 @@ Usage: vagrant snap <subcommand> [options...]
     end# }}}
     def back# {{{
       safe_with_target_vms(target_vmname) do |vm|
-        exe "VBoxManage controlvm '#{vm.uuid}' poweroff"
-        exe "VBoxManage snapshot  '#{vm.uuid}' restorecurrent"
-        exe "VBoxManage startvm   '#{vm.uuid}' --type headless"
+        exe "VBoxManage controlvm \"#{vm.uuid}\" poweroff"
+        exe "VBoxManage snapshot  \"#{vm.uuid}\" restorecurrent"
+        exe "VBoxManage startvm   \"#{vm.uuid}\" --type headless"
       end
     end# }}}
     def take# {{{
@@ -225,7 +228,7 @@ Usage: vagrant snap <subcommand> [options...]
           next
         end
         snapshot = options[:name] ? options[:name] : VBox::SnapShot.next_available_snapname
-        cmd = "VBoxManage snapshot '#{vm.uuid}' take '#{snapshot}' --pause"
+        cmd = "VBoxManage snapshot \"#{vm.uuid}\" take \"#{snapshot}\" --pause"
         if options[:desc]
           cmd << " --description '#{options[:desc]}'"
         end
@@ -247,7 +250,7 @@ Usage: vagrant snap <subcommand> [options...]
       safe_with_target_vms(target) do |vm|
         VBox::SnapShot.parse_tree( vm.uuid )
         if VBox::SnapShot.include?( snapshot )
-          exe "VBoxManage snapshot '#{vm.uuid}' delete '#{snapshot}'"
+          exe "VBoxManage snapshot \"#{vm.uuid}\" delete \"#{snapshot}\""
         else
           ui.warn "'#{snapshot}' is not exist"
         end
